@@ -15,6 +15,22 @@ public class DatabaseManager {
             e.printStackTrace();
         }
     }
+    
+ // Constructor pentru testare (injecție conexiune externă)
+    public DatabaseManager(Connection externalConnection) {
+        this.connection = externalConnection;
+        try {
+            initializeDatabase(); // dacă vrei să creezi tabele și în test
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Folosit de metode interne și de teste dacă ai nevoie
+    public Connection getConnection() {
+        return connection;
+    }
+
 
     private void initializeDatabase() throws SQLException {
         try (Statement stmt = connection.createStatement()) {
@@ -40,13 +56,14 @@ public class DatabaseManager {
         try {
             if (connection != null && !connection.isClosed()) {
                 connection.close();
-                System.out.println("✅ Conexiunea la baza de date a fost inchisa cu succes.");
+                System.out.println("Conexiunea la baza de date a fost inchisa cu succes.");
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
+    //Autentificare angajat
     public Employee authenticateEmployee(int id, String password) {
         String sql = "SELECT * FROM employees WHERE id = ? AND password = ?";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
@@ -70,7 +87,9 @@ public class DatabaseManager {
         return null;
     }
 
+    //Adaugare cerere concediu
     public void addVacationRequest(VacationRequest request) {
+    	
         String sql = "INSERT INTO vacation_requests (employeeId, startDate, endDate, reason, status) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
             pstmt.setInt(1, request.getEmployeeId());
@@ -84,6 +103,7 @@ public class DatabaseManager {
         }
     }
 
+    //Returneaza cererile angajatilor 
     public List<VacationRequest> getVacationRequestsForEmployee(int employeeId) {
         List<VacationRequest> requests = new ArrayList<>();
         String sql = "SELECT * FROM vacation_requests WHERE employeeId = ?";
@@ -108,6 +128,7 @@ public class DatabaseManager {
         return requests;
     }
 
+    //returneaza cererile care sunt in asteptare
     public List<VacationRequest> getPendingRequestsForManager(String team) {
         List<VacationRequest> requests = new ArrayList<>();
         String sql = "SELECT * FROM vacation_requests vr JOIN employees e ON vr.employeeId = e.id " +
@@ -330,6 +351,4 @@ public class DatabaseManager {
         }
         return false;
     }
-
-
 }
