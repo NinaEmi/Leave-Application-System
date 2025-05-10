@@ -20,6 +20,7 @@ public class Main {
 			
 			while(true) {
 				System.out.print("Alege optiunea: ");
+				System.out.println("Test push");
 				try {
 					opt =  Integer.parseInt(scanner.nextLine());
 					if(opt < 1 || opt > 4) {
