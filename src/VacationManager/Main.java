@@ -15,18 +15,38 @@ public class Main {
 			System.out.println("2. Autentificare ca Manager");
 			System.out.println("3. Autentificare ca Administrator");
 			System.out.println("4. Iesire");
-			System.out.print("Alege optiunea: ");
-			int opt = scanner.nextInt();
-			scanner.nextLine();
+			
+			int opt = 0;
+			
+			while(true) {
+				System.out.print("Alege optiunea: ");
+				try {
+					opt =  Integer.parseInt(scanner.nextLine());
+					if(opt < 1 || opt > 4) {
+						System.out.println("Te rog alege o optiune valida (1-4).");
+		                continue;
+					}
+					break;
+				} catch(NumberFormatException e) {
+					System.out.println("Te rog introdu un numar valid!");
+				}
+			}
 
 			if (opt == 4) {
 				System.out.println("La revedere!");
 				break;
 			}
 
-			System.out.print("Introdu ID: ");
-			int id = scanner.nextInt();
-			scanner.nextLine();
+			int id = 0;
+		    while (true) {
+		        System.out.print("Introdu ID: ");
+		        try {
+		            id = Integer.parseInt(scanner.nextLine());
+		            break;
+		        } catch (NumberFormatException e) {
+		            System.out.println("ID invalid. Introdu un numar valid.");
+		        }
+		    }
 
 			System.out.print("Introdu parola: ");
 			String password = scanner.nextLine();
@@ -295,40 +315,69 @@ public class Main {
 				break;
 
 			case 2:
-				System.out.println("1. Vezi angajatii in concediu intr-o perioada");
-				System.out.println("2. Vezi zilele de concediu ramase pentru toti angajatii");
-				System.out.print("Alege optiunea: ");
-				int reportOption = scanner.nextInt();
-				scanner.nextLine();
+			    int reportOption = 0;
 
-				if (reportOption == 1) {
-					System.out.print("Data inceput (YYYY-MM-DD): ");
-					String start = scanner.nextLine();
-					System.out.print("Data sfarsit (YYYY-MM-DD): ");
-					String end = scanner.nextLine();
-					List<String> employeesOnLeave = dbManager.getEmployeesOnVacationDuring(start, end);
-					if (employeesOnLeave.isEmpty()) {
-						System.out.println("Nu sunt angajati in concediu in aceasta perioada.");
-					} else {
-						System.out.println("Angajatii in concediu:");
-						for (String name : employeesOnLeave) {
-							System.out.println(name);
-						}
-					}
-				} else if (reportOption == 2) {
-					Map<String, Integer> report = dbManager.getRemainingVacationDaysForAllEmployees();
-					System.out.println("Zile de concediu ramase:");
-					for (Map.Entry<String, Integer> entry : report.entrySet()) {
-						System.out.println(entry.getKey() + ": " + entry.getValue() + " zile");
-					}
-				} else {
-					System.out.println("Optiune invalida.");
-				}
-				break;
+			    // Citire opțiune raport cu validare
+			    while (true) {
+			        System.out.println("1. Vezi angajatii in concediu intr-o perioada");
+			        System.out.println("2. Vezi zilele de concediu ramase pentru toti angajatii");
+			        System.out.print("Alege optiunea: ");
+			        try {
+			            reportOption = Integer.parseInt(scanner.nextLine());
+			            if (reportOption != 1 && reportOption != 2) {
+			                System.out.println("Te rog alege 1 sau 2.");
+			                continue;
+			            }
+			            break;
+			        } catch (NumberFormatException e) {
+			            System.out.println("Introdu un numar valid (1 sau 2).");
+			        }
+			    }
+
+			    if (reportOption == 1) {
+			        System.out.print("Data inceput (YYYY-MM-DD): ");
+			        String start = scanner.nextLine();
+			        System.out.print("Data sfarsit (YYYY-MM-DD): ");
+			        String end = scanner.nextLine();
+
+			        // Opțional: validare format dată
+			        if (!isValidDate(start) || !isValidDate(end)) {
+			            System.out.println("Formatul datei este invalid. Foloseste formatul YYYY-MM-DD.");
+			            break;
+			        }
+
+			        List<String> employeesOnLeave = dbManager.getEmployeesOnVacationDuring(start, end);
+			        if (employeesOnLeave.isEmpty()) {
+			            System.out.println("Nu sunt angajati in concediu in aceasta perioada.");
+			        } else {
+			            System.out.println("Angajatii in concediu:");
+			            for (String name : employeesOnLeave) {
+			                System.out.println(name);
+			            }
+			        }
+
+			    } else if (reportOption == 2) {
+			        Map<String, Integer> report = dbManager.getRemainingVacationDaysForAllEmployees();
+			        System.out.println("Zile de concediu ramase:");
+			        for (Map.Entry<String, Integer> entry : report.entrySet()) {
+			            System.out.println(entry.getKey() + ": " + entry.getValue() + " zile");
+			        }
+			    }
+			    break;
 
 			default:
 				System.out.println("Optiune invalida.");
 			}
 		}
 	}
+	
+	private static boolean isValidDate(String dateStr) {
+	    try {
+	        LocalDate.parse(dateStr); // implicit format ISO (YYYY-MM-DD)
+	        return true;
+	    } catch (DateTimeParseException e) {
+	        return false;
+	    }
+	}
+
 }

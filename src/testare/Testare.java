@@ -74,7 +74,7 @@ class Testare {
     @Test
     public void testCompleteEmployeeVacationRequestFlow() {
         // 1. Autentificare angajat
-        Employee employee = dbManager.authenticateEmployee(1, "parola12");
+        Employee employee = dbManager.authenticateEmployee(1, "parola123");
         assertNotNull(employee, "Autentificarea ar trebui să reușească");
 
         // 2. Verificare zile disponibile înainte de cerere
@@ -82,8 +82,8 @@ class Testare {
         assertEquals(21, initialDays);
 
         // 3. Trimitere cerere de concediu
-        String startDate = "2025-06-01";
-        String endDate = "2025-06-10";
+        String startDate = "2025-06-10";
+        String endDate = "2025-06-09";
         VacationRequest request = new VacationRequest(0, employee.getId(), startDate, endDate,
                 "Concediu de odihnă", RequestStatus.PENDING);
         dbManager.addVacationRequest(request);
