@@ -82,8 +82,9 @@ class Testare {
         assertEquals(21, initialDays);
 
         // 3. Trimitere cerere de concediu
-        String startDate = "2025-06-10";
-        String endDate = "2025-06-09";
+        String startDate = "2025-06-05";
+        String endDate = "2025-06-11";
+
         VacationRequest request = new VacationRequest(0, employee.getId(), startDate, endDate,
                 "Concediu de odihnă", RequestStatus.PENDING);
         dbManager.addVacationRequest(request);
@@ -102,15 +103,61 @@ class Testare {
 
         // 7. Verificare zile deduse
         int remainingDays = dbManager.getEmployeeVacationDays(employee.getId());
-        assertEquals(11, remainingDays, "Ar trebui să rămână 11 zile după deducere");
+        assertEquals(14, remainingDays, "Ar trebui să rămână 11 zile după deducere");
 
         // 8. Verificare status cerere
         requests = dbManager.getVacationRequestsForEmployee(employee.getId());
         assertEquals(RequestStatus.APPROVED, requests.get(0).getStatus());
 
-        // 9. Verificare listare angajați în concediu
-        List<String> employeesOnLeave = dbManager.getEmployeesOnVacationDuring("2025-06-05", "2025-06-07");
+      //   9. Verificare listare angajați în concediu
+        List<String> employeesOnLeave = dbManager.getEmployeesOnVacationDuring("2025-06-10", "2025-06-12");
         assertEquals(1, employeesOnLeave.size());
         assertEquals("Ion Popescu", employeesOnLeave.get(0));
+    }
+    
+    @Test
+    public void testCompleteEmployeeVacationRequestFlow1() {
+        // 1. Autentificare angajat
+        Employee employee = dbManager.authenticateEmployee(2, "parola456");
+        assertNotNull(employee, "Autentificarea ar trebui să reușească");
+
+        // 2. Verificare zile disponibile înainte de cerere
+        int initialDays = dbManager.getEmployeeVacationDays(employee.getId());
+        assertEquals(15, initialDays);
+
+        // 3. Trimitere cerere de concediu
+        String startDate = "2025-06-18";
+        String endDate = "2025-06-23";
+
+        VacationRequest request = new VacationRequest(1, employee.getId(), startDate, endDate,
+                "Concediu de odihnă", RequestStatus.PENDING);
+        dbManager.addVacationRequest(request);
+
+        // 4. Verificare cerere adăugată
+        List<VacationRequest> requests = dbManager.getVacationRequestsForEmployee(employee.getId());
+        assertEquals(1, requests.size());
+
+        // 5. Manager obține cereri în așteptare
+        List<VacationRequest> pendingRequests = dbManager.getPendingRequestsForManager("Design");
+        assertEquals(1, pendingRequests.size());
+
+        assertFalse(pendingRequests.isEmpty(), "Nu există cereri pending pentru această echipă.");
+
+        // 6. Manager aprobă cererea
+        VacationRequest pendingRequest = pendingRequests.get(0);
+        dbManager.updateRequestStatusWithDeduction(pendingRequest, RequestStatus.APPROVED);
+
+        // 7. Verificare zile deduse
+        int remainingDays = dbManager.getEmployeeVacationDays(employee.getId());
+        assertEquals(9, remainingDays, "Ar trebui să rămână 10 zile după deducere");
+
+        // 8. Verificare status cerere
+        requests = dbManager.getVacationRequestsForEmployee(employee.getId());
+        assertEquals(RequestStatus.APPROVED, requests.get(0).getStatus());
+
+      //   9. Verificare listare angajați în concediu
+        List<String> employeesOnLeave = dbManager.getEmployeesOnVacationDuring("2025-06-18", "2025-06-23");
+        assertEquals(1, employeesOnLeave.size());
+        assertEquals("Maria Ionescu", employeesOnLeave.get(0));
     }
 }

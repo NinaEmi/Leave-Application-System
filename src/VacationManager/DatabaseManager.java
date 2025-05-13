@@ -153,6 +153,31 @@ public class DatabaseManager {
         }
         return requests;
     }
+    
+    public List<VacationRequest> getApprovedRequestsForManager(String team) {
+        List<VacationRequest> requests = new ArrayList<>();
+        String sql = "SELECT * FROM vacation_requests vr JOIN employees e ON vr.employeeId = e.id " +
+                "WHERE vr.status = 'APPROVED' AND e.team = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(sql)) {
+            pstmt.setString(1, team);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                VacationRequest request = new VacationRequest(
+                        rs.getInt("id"),
+                        rs.getInt("employeeId"),
+                        rs.getString("startDate"),
+                        rs.getString("endDate"),
+                        rs.getString("reason"),
+                        RequestStatus.valueOf(rs.getString("status"))
+                );
+                requests.add(request);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return requests;
+    }
 
     public int getEmployeeVacationDays(int employeeId) {
         String sql = "SELECT vacationDays FROM employees WHERE id = ?";
@@ -298,13 +323,25 @@ public class DatabaseManager {
             e.printStackTrace();
         }
     }
+    
+    public int returnMaxValue() throws SQLException {
+    	String sqlString = "SELECT value FROM settings";
+    	try(Statement statement = connection.createStatement();
+    			ResultSet rSet = statement.executeQuery(sqlString)){
+    		while(rSet.next()) {
+    			return rSet.getInt("value");
+    		}
+    	}
+    	return 0;	
+    }
+    
     public List<String> getBlockedPeriods() {
         List<String> periods = new ArrayList<>();
         String sql = "SELECT id, startDate, endDate, description FROM blocked_periods";
         try (Statement stmt = connection.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             while (rs.next()) {
-                periods.add("ID: " + rs.getInt("id") + ", " +
+                periods.add("Data perioadei blocate: " + 
                             rs.getString("startDate") + " - " +
                             rs.getString("endDate") + " (" +
                             rs.getString("description") + ")");
