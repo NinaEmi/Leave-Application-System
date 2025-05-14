@@ -69,7 +69,7 @@ class Testare {
             stmt.execute("INSERT INTO employees VALUES (4, 'Ana Dumitrescu', 'Administrator', 'HR', 'admin123', 30)");
 
             //Adaugam o perioada blocata 
-            stmt.execute("INSERT INTO blocked_periods VALUES (1, '2025-07-10', '2025-07-19', 'Petrecere de vara')");
+            //stmt.execute("INSERT INTO blocked_periods VALUES (1, '2025-07-10', '2025-07-19', 'Petrecere de vara')");
             
             //Adaugam deja o cerere
             stmt.execute("INSERT INTO vacation_requests VALUES (1, 6, '2025-11-10', '2025-11-15', 'nu stiu', 'APPROVED')");
@@ -191,5 +191,41 @@ class Testare {
             fail("Testul a eșuat din cauza unei erori SQL");
         }
     }
+    
+    @Test
+    public void testBlockedPeriodFlow() throws SQLException {
+        // 1. Verificăm că nu există perioade blocate la început
+        List<String> periodsBefore = dbManager.getBlockedPeriods();
+        assertTrue(periodsBefore.isEmpty(), "Nu ar trebui să existe perioade blocate înainte de adăugare.");
+        System.out.println("Nu există perioade blocate înainte de adăugare.");
 
+        // 2. Adăugăm o perioadă blocată
+        String startDate = "2025-07-10";
+        String endDate = "2025-07-19";
+        String description = "Petrecere de vara";
+        dbManager.addBlockedPeriod(startDate, endDate, description);
+        System.out.println("Perioada blocată a fost adăugată: " + startDate + " - " + endDate + " | " + description);
+        
+        // 3. Verificăm că perioada blocată a fost adăugată corect
+        List<String> periodsAfterAdd = dbManager.getBlockedPeriods();
+        assertEquals(1, periodsAfterAdd.size(), "Ar trebui să existe o perioadă blocată.");
+        assertTrue(periodsAfterAdd.stream().anyMatch(p -> p.contains(startDate) && p.contains(endDate) && p.contains(description)), "Perioada blocată nu a fost adăugată corect.");
+        System.out.println("Perioada blocată a fost adăugată corect.");
+        
+        // 4. Vizualizăm perioadele blocate
+        System.out.println("Vizualizare perioade blocate:");
+        periodsAfterAdd.forEach(p -> System.out.println(p));
+
+        // 5. Ștergem perioada blocată pe baza ID-ului (presupunem că ID-ul este 1)
+        int delId = 1;
+        dbManager.deleteBlockedPeriod(delId);
+        System.out.println("Perioada blocată cu ID " + delId + " a fost ștearsă.");
+
+        // 6. Verificăm că perioada blocată a fost ștearsă
+        List<String> periodsAfterDelete = dbManager.getBlockedPeriods();
+        assertTrue(periodsAfterDelete.isEmpty(), "Ar trebui să nu mai existe perioade blocate după ștergere.");
+        System.out.println("Perioada blocată a fost ștearsă cu succes.");
+        
+        System.out.println("Testul pentru gestionare perioade in care nu se accepta zile libere a fost finalizat cu succes.");
+    }
 }
