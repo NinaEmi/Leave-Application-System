@@ -213,12 +213,10 @@ public class Main {
 			System.out.println("2. Vizualizeaza cererile tale");
 			System.out.println("3. Deconectare");
 			System.out.print("Alege optiunea: ");
+			
+			try {
 			int option = scanner.nextInt();
 			scanner.nextLine();
-
-			if (option == 3) {
-				return;
-			}
 
 			switch (option) {
 			case 1:
@@ -259,7 +257,7 @@ public class Main {
 
 						System.out.print("Este concediu medical? (da/nu): ");
 						String isMedical = scanner.nextLine();
-						String reason;
+						String reason = null;
 						RequestStatus status;
 
 						if (isMedical.equalsIgnoreCase("da")) {
@@ -268,25 +266,28 @@ public class Main {
 							System.out.println(
 									"Cerere aprobata automat. Te rugam sa aduci adeverinta medicala la manager.");
 						} else {
-							int teamLimit = dbManager.getSetting("maxTeamOnLeave", 2);
+							int teamLimit = dbManager.returnMaxValue();
 							int currentTeamOnLeave = dbManager.countTeamMembersOnVacation(employee.getTeam(), start,
 									end);
 
 							if (currentTeamOnLeave >= teamLimit) {
+								System.out.print("Introdu motivul concediului: ");
+								reason = scanner.nextLine();
 								System.out.println(
-										"Limita pe echipa a fost atinsa. Cererea va fi PENDING pentru aprobare de catre manager.");
+										"⚠️ Limita pe echipa a fost atinsa. Cererea ta se afla in asteptare si asteapta evaluarea de catre manager!");
 								status = RequestStatus.PENDING;
 							} else {
+								System.out.print("Introdu motivul concediului: ");
+								reason = scanner.nextLine();
 								status = RequestStatus.PENDING;
 								System.out.println("Cererea a fost inregistrata si asteapta aprobarea managerului.");
 							}
-
-							System.out.print("Introdu motivul concediului: ");
-							reason = scanner.nextLine();
 						}
+						
+						String reasonForLeave = reason;
 
 						dbManager.addVacationRequest(
-								new VacationRequest(0, employee.getId(), start, end, reason, status));
+								new VacationRequest(0, employee.getId(), start, end, reasonForLeave, status));
 						System.out.println("Cerere trimisa cu succes.");
 						break;
 
@@ -308,9 +309,14 @@ public class Main {
 					}
 				}
 				break;
+			case 3: return;
 
 			default:
 				System.out.println("Optiune invalida.");
+			}
+			} catch(InputMismatchException e) {
+				System.out.println("Input invalid! Te rog introdu un numar.");
+                scanner.nextLine();
 			}
 		}
 	}
@@ -318,8 +324,8 @@ public class Main {
 	private static void handleManagerMenu(Scanner scanner, DatabaseManager dbManager, Employee manager) {
 		while (true) {
 			System.out.println("\nMeniu Manager:");
-			System.out.println("1. Vizualizeaza cereri PENDING");
-			System.out.println("2. Rapoarte");
+			System.out.println("1. Vizualizeaza cereri");
+			System.out.println("2. Vizualizeaza rapoarte");
 			System.out.println("3. Deconectare");
 			System.out.print("Alege optiunea: ");
 			int option = scanner.nextInt();
@@ -331,62 +337,84 @@ public class Main {
 
 			switch (option) {
 			case 1:
-			    try {
-			    	System.out.println("⚠️ Perioade blocate (angajatii nu isi pot lua liber in aceasta perioada, se accepta doar in perioade exceptionale)!");
-			    	List<String> periods = dbManager.getBlockedPeriods();
-					if (periods.isEmpty()) {
-						System.out.println("Nu exista perioade blocate.");
-					} else {
-						periods.forEach(System.out::println);
-					}
-					
-					System.out.println();
-					
-					// Afișăm cererile deja aprobate pentru echipă
-			        List<VacationRequest> approvedRequestsList = dbManager.getApprovedRequestsForManager(manager.getTeam());
-			        System.out.println("Lista cererilor deja aprobate:");
-			        if (approvedRequestsList.isEmpty()) {
-			            System.out.println("Nu există cereri aprobate în acest moment.");
-			        } else {
-			            for (VacationRequest approvedRequest : approvedRequestsList) {
-			                System.out.println(approvedRequest);
-			            }
-			        }
+				try {
+				    System.out.println("⚠️ Perioade blocate (angajatii nu isi pot lua liber in aceasta perioada, se accepta doar in perioade exceptionale)!");
+				    List<String> periods = dbManager.getBlockedPeriods();
+				    if (periods.isEmpty()) {
+				        System.out.println("Nu exista perioade blocate.");
+				    } else {
+				        periods.forEach(System.out::println);
+				    }
 
-			        System.out.println(); // Linie liberă
+				    int maxAllowed = dbManager.returnMaxValue();
+				    System.out.println("⚠️ ️️Numărul maxim de angajați care își pot lua concediu simultan este: " + maxAllowed);
 
-			        // Obținem cererile pending
-			        List<VacationRequest> pendingRequests = dbManager.getPendingRequestsForManager(manager.getTeam());
-			        if (pendingRequests.isEmpty()) {
-			            System.out.println("Nu există cereri PENDING pentru echipa ta.");
-			        } else {
-			            int maxAllowed = dbManager.returnMaxValue(); // Luăm limita o singură dată
-			            for (VacationRequest request : pendingRequests) {
-			                System.out.println("Cerere în așteptare:");
-			                System.out.println(request);
-			                System.out.println("⚠️ ️️Numărul maxim de angajați care își pot lua concediu simultan este: " + maxAllowed);
+				    System.out.println("\nMeniu Vizualizare Cereri:");
+				    System.out.println("1. Vizualizare cereri aprobate");
+				    System.out.println("2. Vizualizare cereri in asteptare");
+				    System.out.println("3. Iesire");
 
-			                String decision;
-			                do {
-			                    System.out.print("Aprobi cererea ID " + request.getId() + "? (da/nu): ");
-			                    decision = scanner.nextLine().trim().toLowerCase();
-			                } while (!decision.equals("da") && !decision.equals("nu"));
+				    String option1;
+				    do {
+				        System.out.print("Alege o optiune: ");
+				        option1 = scanner.nextLine().trim();
 
-			                if (decision.equals("da")) {
-			                    dbManager.updateRequestStatusWithDeduction(request, RequestStatus.APPROVED);
-			                    System.out.println("✅ Cererea a fost aprobată.");
-			                } else {
-			                    dbManager.updateRequestStatusWithDeduction(request, RequestStatus.REJECTED);
-			                    System.out.println("❌ Cererea a fost respinsă.");
-			                }
+				        switch (option1) {
+				            case "1":
+				                List<VacationRequest> approvedRequestsList = dbManager.getApprovedRequestsForManager(manager.getTeam());
+				                System.out.println("Lista cererilor deja aprobate:");
+				                if (approvedRequestsList.isEmpty()) {
+				                    System.out.println("Nu există cereri aprobate în acest moment.");
+				                } else {
+				                    approvedRequestsList.forEach(System.out::println);
+				                }
+				                break;
 
-			                System.out.println(); // Linie liberă între cereri
-			            }
-			        }
-			    } catch (SQLException e) {
-			        System.out.println("Eroare la accesarea bazei de date:");
-			        e.printStackTrace();
-			    }
+				            case "2":
+				                List<VacationRequest> pendingRequests = dbManager.getPendingRequestsForManager(manager.getTeam());
+				                if (pendingRequests.isEmpty()) {
+				                    System.out.println("Nu există cereri PENDING pentru echipa ta.");
+				                } else {
+				                    for (VacationRequest request : pendingRequests) {
+				                    	System.out.println();
+				                        System.out.println("Cerere în așteptare:");
+				                        System.out.println(request);
+				                        System.out.println("⚠️ ️️Numărul maxim de angajați care își pot lua concediu simultan este: " + maxAllowed);
+
+				                        String decision;
+				                        do {
+				                            System.out.print("Aprobi cererea ID " + request.getId() + "? (da/nu): ");
+				                            decision = scanner.nextLine().trim().toLowerCase();
+				                        } while (!decision.equals("da") && !decision.equals("nu"));
+
+				                        if (decision.equals("da")) {
+				                            dbManager.updateRequestStatusWithDeduction(request, RequestStatus.APPROVED);
+				                            System.out.println("✅ Cererea a fost aprobată.");
+				                        } else {
+				                        	 System.out.print("Introdu motivul respingerii: ");
+				                             String rejectionReason = scanner.nextLine().trim();
+				                             dbManager.updateRequestStatusWithDeduction(request, RequestStatus.REJECTED, rejectionReason);
+				                             System.out.println("❌ Cererea a fost respinsă. Motiv: " + rejectionReason);
+				                        }
+				                    }
+				                }
+				                break;
+
+				            case "3":
+				                System.out.println("Ieșire din meniu...");
+				                break;
+
+				            default:
+				                System.out.println("Optiune invalida. Alege din nou.");
+				                break;
+				        }
+				    } while (!option1.equals("3"));
+
+				} catch (SQLException e) {
+				    System.out.println("Eroare la accesarea bazei de date:");
+				    e.printStackTrace();
+				}
+
 			    break;
 
 			case 2:

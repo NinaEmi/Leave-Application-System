@@ -16,6 +16,7 @@ public class Employee {
         this.password = password;
         this.vacationDays = vacationDays;
     }
+    
 
     public int getId() { return id; }
     public String getName() { return name; }
